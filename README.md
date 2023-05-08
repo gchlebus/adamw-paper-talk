@@ -1,1 +1,2 @@
-Helper slides for the presentation of the paper "Loshchilov, Ilya, and Frank Hutter. “SGDR: Stochastic Gradient Descent with Warm Restarts,” May 3, 2017. http://arxiv.org/abs/1608.03983."
+Helper slides for the presentation of the paper "Loshchilov, Ilya, and Frank Hutter. “Decoupled Weight Decay Regularization,” 2022. https://openreview.net/forum?id=Bkg6RiCqY7.
+"
