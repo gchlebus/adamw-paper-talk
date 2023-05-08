@@ -1,0 +1,182 @@
+---
+title: "Decoupled Weight Decay Regularization"
+subtitle: "Paper Presentation"
+format: revealjs
+author: Grzegorz Chlebus
+---
+
+## Intro
+
+::: {.incremental}
+- Adaptive gradient methods (i.e., Adam) have become a default method of choice for training deep neural nets.
+
+- <b>But</b>: state-of-the-art results on popular datasets are still obtained by applying SGD with momentum.
+
+- Various hypotheses have been proposed to explain the worse generalization power of Adam.
+
+- Loshchilov et al. [1] investigated whether it's better to use L2 regularization or weight decay.
+:::
+
+::: aside
+[1] Loshchilov & Hutter, Decoupled Weight Decay Regularization, 2019.
+:::
+
+## SGD
+
+::: {.incremental}
+1. Compute gradient 
+$$g_t =\nabla_\theta f_t(\theta_{t-1})$$
+2. Update weights 
+$$\theta_t = \theta_{t-1} -\alpha g_t$$
+:::
+
+::: aside
+$\nabla$ - gradient, $\theta_t$ - model weights at timestep $t$, $f$ - loss function, 
+$\alpha$ - learning rate.
+:::
+
+## SGD with weight decay [1]
+
+::: {.incremental}
+1. Compute gradient
+$$g_t =\nabla_\theta f_t(\theta_{t-1})$$
+2. Update weights
+$$\theta_t = (1-\lambda)\theta_{t-1} -\alpha g_t$$
+:::
+
+::: aside
+$\lambda$ - weight decay factor (e.g., $\lambda = 0.1$)
+
+[1] Hanson & Pratt, Comparing Biases for Minimal Network Construction with Back-Propagation, 1988.
+:::
+
+## SGD with L2 regularization {.smaller}
+
+::: {.incremental}
+1. Modified loss 
+$$f'_t(\theta) = f_t(\theta) + \frac{\gamma}{2} ||\theta||_2^2$$
+
+2. Compute gradient
+$$g'_t =\nabla_\theta f_t'(\theta_{t-1}) =\nabla_\theta f_t(\theta_{t-1}) + \frac{\gamma}{2}\nabla_\theta||\theta||_2^2 = \nabla_\theta f_t(\theta_{t-1}) + 2\frac{\gamma}{2} \theta_{t-1} = g_t+ \gamma \theta_{t-1}$$
+
+3. Update weights
+$$\theta_t = \theta_{t-1} -\alpha (g_t + \gamma \theta_{t-1}) = (1-\gamma\alpha)\theta_{t-1}-\alpha g_t$$
+
+4. Assuming that $\gamma = \frac{\lambda}{\alpha}$, we have 
+$$\theta_t = (1-\lambda)\theta_{t-1}-\alpha g_t$$
+There is such $\gamma$ for which L2 regularization is equal to weight decay
+:::
+
+## L2 reg = Weight Decay
+
+::: {.incremental}
+- Due to this equivalence, L2 regularization is often reffered to as weight decay ([pytorch SGD](https://pytorch.org/docs/stable/generated/torch.optim.SGD.html#torch.optim.SGD))
+![](assets/torch_sgd_docs.png){height="300"}
+- It holds for SGD, but not for adaptive gradient methods (e.g., Adam)
+:::
+
+## Adam {.smaller}
+
+::: {.notes}
+The first moment, also known as exponentially weighted average of the gradient, is calculated as a running average of the gradient of the loss function. By taking a running average of the gradients, the first moment smoothes out the noise in the gradient and provides a better estimate of the overall direction of the gradient.
+
+Second moment provides an estimate of the variance of gradients. 
+:::
+
+::: {.incremental}
+1. Compute gradient
+$$g_t =\nabla_\theta f_t(\theta_{t-1})$$
+
+2. Update first moment estimate
+$$m_t = \beta_1 m_{t-1} + (1-\beta_1) g_t$$
+
+3. Update second raw moment estimate
+$$v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^2$$
+
+4. Update weights
+$$\theta_t = \theta_{t-1} - \alpha\frac{m_t}{\sqrt{v_t}+\epsilon}$$
+:::
+
+::: aside
+Parameter values from Adam paper: $\beta_1 = 0.9$, $\beta_2 = 0.999$, $\epsilon = 10^{-8}$
+:::
+
+## Adam with Weight Decay (L2 reg) {.smaller}
+
+::: {.incremental}
+1. Compute gradient
+$$g_t =\nabla_\theta f_t(\theta_{t-1}) + \gamma\theta_{t-1}$$
+
+2. Update first moment estimate
+$$m_t = \beta_1 m_{t-1} + (1-\beta_1) g_t$$
+
+3. Update second raw moment estimate
+$$v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^2$$
+
+4. Update weights
+$$\theta_t = \theta_{t-1} - \alpha\frac{m_t}{\sqrt{v_t}+\epsilon}$$
+:::
+
+## AdamW: Adam with Decoupled Weight Decay {.smaller}
+
+::: {.incremental}
+1. Compute gradient
+$$g_t =\nabla_\theta f_t(\theta_{t-1})$$
+
+2. Update first moment estimate
+$$m_t = \beta_1 m_{t-1} + (1-\beta_1) g_t$$
+
+3. Update second raw moment estimate
+$$v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^2$$
+
+4. Update weights
+$$\theta_t = (1-\lambda)\theta_{t-1} - \alpha\frac{m_t}{\sqrt{v_t}+\epsilon}$$
+:::
+
+## L2 reg != Weight Decay for Adam {.smaller}
+
+::: {.incremental}
+- There is no $\gamma$ for which the update step from the Adam with L2 regularization will match the step from the weight decay.
+![](assets/prop2.png){}
+
+- With L2 reg the gradient of the loss and the the gradient of the regularizer are adapted, whereas with weight decay, only the gradients of the loss are adapted.
+
+- Weights that tend to have large gradients are regularized by a smaller relative amount than other weights.
+:::
+
+## Results
+
+::: {.r-stack}
+![](assets/Fig1.png){height="650"}
+:::
+
+## Results
+
+::: {.r-stack}
+![](assets/Fig2.png){height="650"}
+:::
+
+## Results
+
+::: {.r-stack}
+![](assets/Fig4.png){height="650"}
+:::
+
+## AdamW: Applications
+
+AdamW was employed in the "Improving Language Understanding by Generative Pre-Training" paper that introduced GPT models.
+
+## SGD with momentum
+
+1. Compute gradient 
+$$g_t =\nabla_\theta f_t(\theta_{t-1})$$
+
+2. Update velocity
+$$v_t = \mu v_{t-1} + \alpha g_t$$
+
+3. Update weights
+$$\theta_t = \theta_{t-1} - v_t$$
+
+::: aside
+$\mu$ - momentum (typically around 0.9), $v_t$ - velocity
+:::
